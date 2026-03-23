@@ -1,0 +1,16 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\Domain\Holiday\HolidayProviderInterface: '@App\Domain\Holiday\PolishHolidayProvider'
+    App\Domain\Leave\LeaveAnalyzerInterface: '@App\Domain\Leave\LeaveAnalyzer'
+    App\Domain\Leave\LeaveRecommendationEngineInterface: '@App\Domain\Leave\LeaveRecommendationEngine'
+    App\Domain\Workday\WorkdayRangeCalculatorInterface: '@App\Domain\Workday\WorkdayRangeCalculator'
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'

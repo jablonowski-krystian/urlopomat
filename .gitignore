@@ -28,6 +28,7 @@
 /var/bootstrap.php.cache
 /bin/*
 !bin/console
+!bin/phpunit
 !bin/symfony_requirements
 /vendor/
 
@@ -38,6 +39,7 @@
 # PHPUnit
 /app/phpunit.xml
 /phpunit.xml
+/.phpunit.cache/
 
 # Build data
 /build/
@@ -50,3 +52,12 @@
 
 # Embedded web-server pid file
 /.web-server-pid
+
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+###< symfony/framework-bundle ###

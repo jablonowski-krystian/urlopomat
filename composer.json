@@ -1,0 +1,52 @@
+{
+  "name": "jablonowski-krystian/urlopomat",
+  "description": "Poland-focused vacation planning API.",
+  "type": "project",
+  "license": "Apache-2.0",
+  "require": {
+    "php": "^8.5",
+    "symfony/console": "^7.4",
+    "symfony/dotenv": "^7.4",
+    "symfony/flex": "^2.0",
+    "symfony/framework-bundle": "^7.4",
+    "symfony/runtime": "^7.4",
+    "symfony/yaml": "^7.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "App\\Tests\\": "tests/"
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "symfony/flex": true,
+      "symfony/runtime": true
+    },
+    "sort-packages": true
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "extra": {
+    "symfony": {
+      "allow-contrib": false,
+      "require": "^7.4"
+    }
+  },
+  "scripts": {
+    "auto-scripts": {
+      "cache:clear": "symfony-cmd",
+      "assets:install %PUBLIC_DIR%": "symfony-cmd"
+    },
+    "test": "php bin/phpunit",
+    "analyse": "phpstan analyse --no-progress --debug"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^2.1",
+    "phpunit/phpunit": "^11.5"
+  }
+}

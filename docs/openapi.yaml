@@ -1,0 +1,572 @@
+openapi: 3.0.3
+info:
+  title: Urlopomat API
+  version: 0.1.0
+  description: >
+    Poland-focused vacation planning API.
+    Version 1 supports only Poland public holidays, weekend logic, workday calculations,
+    leave analysis, and leave recommendations.
+servers:
+  - url: https://127.0.0.1:8000
+tags:
+  - name: Health
+  - name: Holidays
+  - name: Workdays
+  - name: Leave
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      operationId: getHealth
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /api/v1/holidays:
+    get:
+      tags:
+        - Holidays
+      operationId: getHolidays
+      summary: List Polish public holidays for a year
+      parameters:
+        - name: year
+          in: query
+          required: true
+          description: Supported years start at 2000.
+          schema:
+            type: integer
+            minimum: 2000
+          example: 2026
+      responses:
+        '200':
+          description: Holidays for selected year
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HolidaysResponse'
+              example:
+                country: PL
+                year: 2026
+                holidays:
+                  - code: new_year
+                    name: Nowy Rok
+                    date: '2026-01-01'
+                  - code: epiphany
+                    name: Trzech Kroli
+                    date: '2026-01-06'
+                  - code: easter_sunday
+                    name: Niedziela Wielkanocna
+                    date: '2026-04-05'
+                  - code: easter_monday
+                    name: Poniedzialek Wielkanocny
+                    date: '2026-04-06'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_year:
+                  value:
+                    error:
+                      code: missing_year
+                      message: Query parameter "year" is required and must be a non-empty string.
+                invalid_year:
+                  value:
+                    error:
+                      code: invalid_year
+                      message: Query parameter "year" must be a valid integer.
+                unsupported_year:
+                  value:
+                    error:
+                      code: unsupported_year
+                      message: Year 1999 is not supported. Minimum supported year is 2000.
+  /api/v1/workdays/range:
+    get:
+      tags:
+        - Workdays
+      operationId: getWorkdayRangeSummary
+      summary: Calculate workdays in date range
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: '2026-01-01'
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: '2026-01-31'
+      responses:
+        '200':
+          description: Workday summary for requested range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkdaysRangeResponse'
+              example:
+                country: PL
+                from: '2026-01-01'
+                to: '2026-01-31'
+                total_days: 31
+                workdays: 20
+                non_workdays: 11
+                holidays_count: 2
+                holidays:
+                  - code: new_year
+                    name: Nowy Rok
+                    date: '2026-01-01'
+                  - code: epiphany
+                    name: Trzech Kroli
+                    date: '2026-01-06'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_from:
+                  value:
+                    error:
+                      code: missing_from
+                      message: Query parameter "from" is required.
+                missing_to:
+                  value:
+                    error:
+                      code: missing_to
+                      message: Query parameter "to" is required.
+                invalid_from:
+                  value:
+                    error:
+                      code: invalid_from
+                      message: Query parameter "from" must use format YYYY-MM-DD.
+                invalid_to:
+                  value:
+                    error:
+                      code: invalid_to
+                      message: Query parameter "to" must use format YYYY-MM-DD.
+                invalid_range:
+                  value:
+                    error:
+                      code: invalid_range
+                      message: Query parameter "from" must be before or equal to "to".
+                range_too_large:
+                  value:
+                    error:
+                      code: range_too_large
+                      message: Date range cannot exceed 366 days.
+                unsupported_year:
+                  value:
+                    error:
+                      code: unsupported_year
+                      message: Year 1999 is not supported. Minimum supported year is 2000.
+  /api/v1/leave/analyze:
+    post:
+      tags:
+        - Leave
+      operationId: analyzeLeaveRange
+      summary: Analyze leave days required for a selected vacation window
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveAnalyzeRequest'
+            example:
+              from: '2026-01-01'
+              to: '2026-01-10'
+      responses:
+        '200':
+          description: Leave analysis result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveAnalyzeResponse'
+              example:
+                country: PL
+                from: '2026-01-01'
+                to: '2026-01-10'
+                total_days: 10
+                leave_days_required: 5
+                non_workdays: 5
+                holidays_count: 2
+                leave_dates:
+                  - '2026-01-02'
+                  - '2026-01-05'
+                  - '2026-01-07'
+                  - '2026-01-08'
+                  - '2026-01-09'
+                holidays:
+                  - code: new_year
+                    name: Nowy Rok
+                    date: '2026-01-01'
+                  - code: epiphany
+                    name: Trzech Kroli
+                    date: '2026-01-06'
+        '400':
+          description: Invalid payload or date range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_json:
+                  value:
+                    error:
+                      code: invalid_json
+                      message: Request body must contain valid JSON object.
+                missing_from:
+                  value:
+                    error:
+                      code: missing_from
+                      message: Field "from" is required.
+                missing_to:
+                  value:
+                    error:
+                      code: missing_to
+                      message: Field "to" is required.
+                invalid_from:
+                  value:
+                    error:
+                      code: invalid_from
+                      message: Field "from" must use format YYYY-MM-DD.
+                invalid_to:
+                  value:
+                    error:
+                      code: invalid_to
+                      message: Field "to" must use format YYYY-MM-DD.
+                invalid_range:
+                  value:
+                    error:
+                      code: invalid_range
+                      message: Field "from" must be before or equal to "to".
+                range_too_large:
+                  value:
+                    error:
+                      code: range_too_large
+                      message: Date range cannot exceed 366 days.
+                unsupported_year:
+                  value:
+                    error:
+                      code: unsupported_year
+                      message: Year 1999 is not supported. Minimum supported year is 2000.
+  /api/v1/leave/recommendations:
+    get:
+      tags:
+        - Leave
+      operationId: getLeaveRecommendations
+      summary: Get leave recommendations for selected period and leave budget
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: '2026-01-01'
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: '2026-12-31'
+        - name: budget
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+          example: 5
+        - name: strategy
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - best_ratio
+            default: best_ratio
+          example: best_ratio
+      responses:
+        '200':
+          description: Ranked leave recommendations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRecommendationsResponse'
+              example:
+                country: PL
+                strategy: best_ratio
+                budget: 1
+                from: '2026-05-01'
+                to: '2026-05-10'
+                recommendations:
+                  - from: '2026-05-01'
+                    to: '2026-05-04'
+                    total_days_off: 4
+                    leave_days_required: 1
+                    ratio: 4
+                    holidays_count: 1
+                    leave_dates:
+                      - '2026-05-04'
+                    holidays:
+                      - code: labour_day
+                        name: Swieto Pracy
+                        date: '2026-05-01'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_budget:
+                  value:
+                    error:
+                      code: missing_budget
+                      message: Query parameter "budget" is required.
+                invalid_budget:
+                  value:
+                    error:
+                      code: invalid_budget
+                      message: Query parameter "budget" must be an integer greater or equal to 0.
+                invalid_strategy:
+                  value:
+                    error:
+                      code: invalid_strategy
+                      message: Recommendation strategy "unknown" is not supported.
+                invalid_range:
+                  value:
+                    error:
+                      code: invalid_range
+                      message: Query parameter "from" must be before or equal to "to".
+                range_too_large:
+                  value:
+                    error:
+                      code: range_too_large
+                      message: Date range cannot exceed 366 days.
+                unsupported_year:
+                  value:
+                    error:
+                      code: unsupported_year
+                      message: Year 1999 is not supported. Minimum supported year is 2000.
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorBody'
+    ErrorBody:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    Holiday:
+      type: object
+      required:
+        - code
+        - name
+        - date
+      properties:
+        code:
+          type: string
+          example: new_year
+        name:
+          type: string
+          example: Nowy Rok
+        date:
+          type: string
+          format: date
+          example: '2026-01-01'
+    HolidaysResponse:
+      type: object
+      required:
+        - country
+        - year
+        - holidays
+      properties:
+        country:
+          type: string
+          example: PL
+        year:
+          type: integer
+          example: 2026
+        holidays:
+          type: array
+          items:
+            $ref: '#/components/schemas/Holiday'
+    WorkdaysRangeResponse:
+      type: object
+      required:
+        - country
+        - from
+        - to
+        - total_days
+        - workdays
+        - non_workdays
+        - holidays_count
+        - holidays
+      properties:
+        country:
+          type: string
+          example: PL
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        total_days:
+          type: integer
+        workdays:
+          type: integer
+        non_workdays:
+          type: integer
+        holidays_count:
+          type: integer
+        holidays:
+          type: array
+          items:
+            $ref: '#/components/schemas/Holiday'
+    LeaveAnalyzeRequest:
+      type: object
+      required:
+        - from
+        - to
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+    LeaveAnalyzeResponse:
+      type: object
+      required:
+        - country
+        - from
+        - to
+        - total_days
+        - leave_days_required
+        - non_workdays
+        - holidays_count
+        - leave_dates
+        - holidays
+      properties:
+        country:
+          type: string
+          example: PL
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        total_days:
+          type: integer
+        leave_days_required:
+          type: integer
+        non_workdays:
+          type: integer
+        holidays_count:
+          type: integer
+        leave_dates:
+          type: array
+          items:
+            type: string
+            format: date
+        holidays:
+          type: array
+          items:
+            $ref: '#/components/schemas/Holiday'
+    LeaveRecommendation:
+      type: object
+      required:
+        - from
+        - to
+        - total_days_off
+        - leave_days_required
+        - ratio
+        - holidays_count
+        - leave_dates
+        - holidays
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        total_days_off:
+          type: integer
+        leave_days_required:
+          type: integer
+        ratio:
+          type: number
+          format: float
+        holidays_count:
+          type: integer
+        leave_dates:
+          type: array
+          items:
+            type: string
+            format: date
+        holidays:
+          type: array
+          items:
+            $ref: '#/components/schemas/Holiday'
+    LeaveRecommendationsResponse:
+      type: object
+      required:
+        - country
+        - strategy
+        - budget
+        - from
+        - to
+        - recommendations
+      properties:
+        country:
+          type: string
+          example: PL
+        strategy:
+          type: string
+          example: best_ratio
+        budget:
+          type: integer
+          minimum: 0
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        recommendations:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaveRecommendation'
